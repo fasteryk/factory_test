@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+
+<FT>
+
+<CFG>
+	<TTY_DEVICE name="/dev/ttyUSB0" />
+</CFG>
+
+<INSTALL_STEPS>
+	<UBOOT>
+		<ACTION desc="Upload update image">
+			<CMD body="setenv ipaddr 192.168.10.250" />
+			<CMD body="setenv serverip 192.168.10.102" />
+			<CMD body="setenv bootargs mem=156M console=ttyAMA0,115200 root=/dev/ram0 mtdparts=physmap-flash.0:384K(boot),1152K(uImage),13824K(rootfs),1M(config)" />
+			<CMD body="tftp 0xc1500000 system_update.img" pattern="done" timeout="150" />
+		</ACTION>
+		<ACTION desc="Boot up target board">
+			<CMD body="bootm 0x80060000 0xc1500000" pattern="boot up" timeout="600" delay="10" />
+		</ACTION>
+	</UBOOT>
+	
+	<SHELL>
+		<ACTION desc="Empty NOR flash">
+			<CMD body="mount -t jffs2 /dev/mtdblock3 /mnt/flash &gt;/dev/null 2&gt;&amp;1" check_result="1" timeout="50" />
+			<CMD body="rm /mnt/flash/* &gt;/dev/null 2&gt;&amp;1" check_result="0" timeout="50" />
+			<CMD body="umount /mnt/flash &gt;/dev/null 2&gt;&amp;1" check_result="1" timeout="50" />		
+		</ACTION>
+		<ACTION desc="Erase NAND flash">
+			<CMD body="flash_erase /dev/mtd4 0 2048 &gt;/dev/null 2&gt;&amp;1" check_result="1" timeout="150" />	
+		</ACTION>
+		<ACTION desc="Update system files">
+			<CMD body="mount /dev/mtdblock4 /mnt/nand -t yaffs2 &gt;/dev/null 2&gt;&amp;1" check_result="1" timeout="50" />	
+			<CMD body="cp /system_update/rootfs-dep/* /mnt/nand -raf &gt;/dev/null 2&gt;&amp;1"  check_result="1" timeout="600"/>	
+			<CMD body="mknod /mnt/nand/dev/console c 5 1 &gt;/dev/null 2&gt;&amp;1" check_result="1" timeout="20" />
+			<CMD body="umount /mnt/nand &gt;/dev/null 2&gt;&amp;1" check_result="1" timeout="100" />
+		</ACTION>	
+		<ACTION desc="Update INITRD">
+			<CMD body="dd if=/system_update/initrd of=/dev/mtdblock2 &gt;/dev/null 2&gt;&amp;1" check_result="1" timeout="100" />
+		</ACTION>
+		<ACTION desc="Update bootloader environment variables">
+			<CMD body="dd if=/system_update/uboot_env of=/dev/mtdblock0 seek=2 bs=128k count=1 &gt;/dev/null 2&gt;&amp;1" check_result="1" timeout="100" />
+		</ACTION>
+	</SHELL>
+</INSTALL_STEPS>
+
+<TEST_STEPS>
+</TEST_STEPS>
+
+</FT>
+
