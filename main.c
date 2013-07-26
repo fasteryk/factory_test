@@ -11,49 +11,25 @@
 #include <string.h>
 
 #include "profile.h"
+#include "common.h"
+#include "hardware_test.h"
 
 
 #define LINE_LEN			2048
 
 
-int tty_fd;
 GtkWidget *main_window, *install_progress_bar, *install_info_view,
-		*start_install_button;
+		*start_install_button, *start_test_button, *stop_test_button,
+		*test_item_view, *result_label;
 
 
-static int open_tty(char *device, speed_t baudrate)
+static void clear_dtr()
 {
-    int fd;
-    struct termios options;
+	int status;
 
-    fd = open(device, O_RDWR | O_NOCTTY | O_NDELAY);
-    if (fd == -1) {
-    	perror("open tty");
-        return -1;
-    } else
-        fcntl(fd, F_SETFL, 0);
-
-    tcgetattr(fd, &options);
-
-    cfsetispeed(&options, baudrate);
-    cfsetospeed(&options, baudrate);
-
-    options.c_cflag |= (CLOCAL | CREAD);
-    options.c_cflag &= ~PARENB;         /* no parity */
-    options.c_cflag &= ~CSTOPB;         /* one stop bit */
-    options.c_cflag &= ~CSIZE;          /* mask the character size bits */
-    options.c_cflag |= CS8;             /* select 8 data bits */
-    options.c_cflag &= ~CRTSCTS;        /* disable hardware flow control */
-    options.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);  /* choosing raw input */
-    options.c_iflag &= ~(IXON | IXOFF | IXANY);          /* disable software flow control */
-    options.c_oflag &= ~OPOST;          /* choosing raw output */
-    options.c_cc[VTIME] = 1;
-    options.c_cc[VMIN] = 0;
-
-    tcflush(fd, TCIOFLUSH);
-    tcsetattr(fd, TCSANOW, &options);
-
-    return fd;
+	ioctl(tty_fd, TIOCMGET, &status);
+	status &= ~TIOCM_DTR;
+	ioctl(tty_fd, TIOCMSET, &status);
 }
 
 static void display_error_dialog(const gchar *msg)
@@ -86,6 +62,8 @@ static void setup_run_env()
 		sprintf(msg, "Can't open tty device: %s", tty_device);
 		goto _err;
 	}
+
+	clear_dtr();
 
 	return;
 
@@ -121,7 +99,6 @@ gboolean delete_event(GtkWidget *window, GdkEvent *event, gpointer data)
 int main(int argc, char *argv[])
 {
 	GtkBuilder *builder;
-	char device[20];
 
 	gtk_init(&argc, &argv);
 
@@ -131,17 +108,29 @@ int main(int argc, char *argv[])
 	gtk_window_maximize(GTK_WINDOW(main_window));
 
 	install_progress_bar =
-				GTK_WIDGET(gtk_builder_get_object(builder, "install_progressbar"));
+			GTK_WIDGET(gtk_builder_get_object(builder, "install_progressbar"));
 	install_info_view =
-				GTK_WIDGET(gtk_builder_get_object(builder, "install_info_view"));
+			GTK_WIDGET(gtk_builder_get_object(builder, "install_info_view"));
 	start_install_button =
 			GTK_WIDGET(gtk_builder_get_object(builder, "start_install_button"));
+	start_test_button =
+			GTK_WIDGET(gtk_builder_get_object(builder, "start_test_button"));
+	stop_test_button =
+			GTK_WIDGET(gtk_builder_get_object(builder, "stop_test_button"));
+	test_item_view =
+			GTK_WIDGET(gtk_builder_get_object(builder, "test_item_view"));
+	result_label = GTK_WIDGET(gtk_builder_get_object(builder, "test_result"));
+
+	setup_test_item_view();
+	set_result_label_font();
 
 	gtk_builder_connect_signals(builder, NULL);
 
 	gtk_widget_show_all(main_window);
 
 	setup_run_env();
+
+	set_model();
 
 	/* Hand control over to the main loop. */
 	gtk_main();

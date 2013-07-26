@@ -17,7 +17,7 @@ LIB_PATH = -lgtk-3 -lgdk-3 -latk-1.0 -lgio-2.0 -lpangocairo-1.0 -lgdk_pixbuf-2.0
 CFLAGS += -g $(INC_PATH) 
 LDFLAGS += -export-dynamic $(LIB_PATH)
 
-OBJS = main.o install_software.o common.o profile.o
+OBJS = main.o install_software.o common.o profile.o hardware_test.o
 
 all:$(TARGET)
 

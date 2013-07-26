@@ -1,0 +1,50 @@
+#!/usr/bin/expect --
+
+log_user 0
+
+set remote_ip   192.168.10.210
+set filename	app.tar.gz
+
+spawn -noecho ftp $remote_ip
+
+while {1} {
+	expect  {
+		"ame "		{ send "root\r" }
+		"assword:"	{ send "123456\r" }
+		"ftp>"      { break }
+		timeout		{ exit -1 }
+	}
+}
+
+send "binary\r"
+expect "ftp>"
+send "cd /root\r"
+expect "ftp>"
+send "put $filename\r"
+expect "ftp>"
+send "bye\r"
+expect eof
+
+spawn -noecho telnet $remote_ip
+
+while {1} {
+	expect  {
+		"login:"    { send "root\r" }
+		"assword:"  { send "123456\r" }
+		"\\$"       { break }
+		timeout		{ exit -1 }
+	}
+}
+
+send "tar zxvf $filename\r"
+expect "\\$"
+send "rm $filename\r"
+expect "\\$"
+send "sync\r"
+expect "\\$"
+send "exit\r"
+expect eof
+
+
+
+

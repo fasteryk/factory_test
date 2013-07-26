@@ -12,7 +12,6 @@
 #include "common.h"
 #include "profile.h"
 
-
 #define CTRLC			0x03
 #define IMAGE_FILE		"/tftpboot/system_update.img"
 #define IH_MAGIC		0x27051956	/* Image Magic Number		*/
@@ -104,48 +103,6 @@ static gboolean update_progress_bar(gpointer data)
 	gtk_progress_bar_set_text(GTK_PROGRESS_BAR(install_progress_bar), buf);
 
 	return FALSE;
-}
-
-static void recycle_target_power()
-{
-	int status;
-
-	ioctl(tty_fd, TIOCMGET, &status);
-	status |= TIOCM_DTR;
-	ioctl(tty_fd, TIOCMSET, &status);
-
-	sleep(5);
-
-	ioctl(tty_fd, TIOCMGET, &status);
-	status &= ~TIOCM_DTR;
-	ioctl(tty_fd, TIOCMSET, &status);
-}
-
-static int connect_to_target()
-{
-	const char ctrlc[2] = {CTRLC, '\0'};
-	int cnt = 300, n;
-	char c;
-
-	show_info("Connect to target board  ...  ");
-
-	recycle_target_power();
-
-	tcflush(tty_fd, TCIOFLUSH);
-
-	while (cnt--) {
-		send_cmd(tty_fd, ctrlc);
-
-		while (read(tty_fd, &c, 1) == 1) {
-			if (c == '#') {
-				show_info("done\n");
-				return 0;
-			}
-		}
-	}
-
-	show_info("failure\n");
-	return -1;
 }
 
 static int check_update_image()
@@ -250,6 +207,7 @@ static int exec_shell_phase()
 				return -1;
 			}
 
+			usleep(100000);
 			oper_counter++;
 			g_idle_add(update_progress_bar, &oper_counter);
 		}
@@ -261,6 +219,32 @@ static int exec_shell_phase()
 	return 0;
 }
 
+static int connect_to_target()
+{
+	const char ctrlc[2] = {CTRLC, '\0'};
+	int cnt = 300, n;
+	char c;
+
+	close(tty_fd);
+	usleep(500000);
+	tty_fd = open_tty(tty_device, B115200);
+
+	recycle_target_power();
+
+	while (cnt--) {
+		tcflush(tty_fd, TCIOFLUSH);
+		send_cmd(tty_fd, ctrlc);
+		usleep(100000);
+
+		while (read(tty_fd, &c, 1) == 1) {
+			if (c == '#')
+				return 0;
+		}
+	}
+
+	return -1;
+}
+
 static gpointer install_thread(gpointer data)
 {
 	int i, ret, failure = 0;
@@ -270,10 +254,13 @@ static gpointer install_thread(gpointer data)
 		return NULL;
 	}
 
+	show_info("Connect to target board  ...  ");
 	if (connect_to_target() < 0) {
 		g_idle_add(finish_up_install, NULL);
+		show_info("failure\n");
 		return NULL;
 	}
+	show_info("done\n");
 
 	oper_counter++;
 	g_idle_add(update_progress_bar, &oper_counter);
@@ -285,8 +272,14 @@ static gpointer install_thread(gpointer data)
 
 	sleep(1);
 
-	if (exec_shell_phase() < 0)
+	if (exec_shell_phase() < 0) {
 		failure = 1;
+		goto _exit;
+	}
+
+	//show_info("Recycle target board power ...  ");
+	//recycle_target_power();
+	//show_info("done\n");
 
 _exit:
 	if (failure)

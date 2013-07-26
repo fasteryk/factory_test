@@ -19,6 +19,7 @@
 char *tty_device = NULL;
 struct install_action *uboot_action_head = NULL,
 						*shell_action_head = NULL;
+struct test_item *test_item_list = NULL;
 
 
 static int get_element_count(xmlDoc *doc, char *path)
@@ -100,7 +101,7 @@ static int get_install_action(xmlDoc *doc, const char *path, struct install_acti
 
 	act_cnt = get_element_count(doc, buf);
 	if (act_cnt) {
-		for ( ;act_cnt; act_cnt--) {
+		for ( ; act_cnt; act_cnt--) {
 			ia = malloc(sizeof(struct install_action));
 			ia->next = *action == NULL ? NULL : *action;
 			*action = ia;
@@ -148,6 +149,34 @@ static int get_install_action(xmlDoc *doc, const char *path, struct install_acti
 	return 0;
 }
 
+static int get_test_item(xmlDoc *doc, struct test_item **item)
+{
+	int item_cnt;
+	char buf[100], *str;
+	struct test_item *ti;
+
+	item_cnt = get_element_count(doc, "/FT/TEST_STEPS/ACTION");
+	if (item_cnt == 0)
+		return 0;
+
+	for ( ; item_cnt; item_cnt--) {
+		ti = malloc(sizeof(struct test_item));
+		ti->next = *item == NULL ? NULL : *item;
+		*item = ti;
+
+		sprintf(buf, "/FT/TEST_STEPS/ACTION[%d]", item_cnt);
+		get_element_attribute_value(doc, buf, "desc", &ti->name);
+
+		sprintf(buf, "/FT/TEST_STEPS/ACTION[%d]/CMD", item_cnt);
+		get_element_attribute_value(doc, buf, "body", &ti->cmd);
+		get_element_attribute_value(doc, buf, "key", &str);
+		ti->key = atoi(str);
+		free(str);
+	}
+
+	return 0;
+}
+
 static int get_config_content(xmlDoc *doc)
 {
 	if (get_element_attribute_value(doc, "/FT/CFG/TTY_DEVICE",
@@ -156,6 +185,7 @@ static int get_config_content(xmlDoc *doc)
 
 	get_install_action(doc, "/FT/INSTALL_STEPS/UBOOT", &uboot_action_head);
 	get_install_action(doc, "/FT/INSTALL_STEPS/SHELL", &shell_action_head);
+	get_test_item(doc, &test_item_list);
 
 	return 0;
 }
@@ -164,6 +194,7 @@ static void print_content()
 {
 	int i;
 	struct install_action *act;
+	struct test_item *ti;
 
 	act = uboot_action_head;
 	while (act) {
@@ -196,6 +227,14 @@ static void print_content()
 		}
 
 		act = act->next;
+	}
+
+	ti = test_item_list;
+	while (ti) {
+		printf("test item: %s\n", ti->name);
+		printf("	cmd: %s\n", ti->cmd);
+		printf("	key: %d\n", ti->key);
+		ti = ti->next;
 	}
 }
 

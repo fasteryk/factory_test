@@ -9,8 +9,8 @@
 <INSTALL_STEPS>
 	<UBOOT>
 		<ACTION desc="Upload update image">
-			<CMD body="setenv ipaddr 192.168.10.250" />
-			<CMD body="setenv serverip 192.168.10.102" />
+			<CMD body="setenv ipaddr 192.168.10.200" />
+			<CMD body="setenv serverip 192.168.10.101" />
 			<CMD body="setenv bootargs mem=156M console=ttyAMA0,115200 root=/dev/ram0 mtdparts=physmap-flash.0:384K(boot),1152K(uImage),13824K(rootfs),1M(config)" />
 			<CMD body="tftp 0xc1500000 system_update.img" pattern="done" timeout="150" />
 		</ACTION>
@@ -44,6 +44,42 @@
 </INSTALL_STEPS>
 
 <TEST_STEPS>
+	<ACTION desc="1. Waiting for target board to start up">
+		<CMD body="test_script/hardware_test check-status" key="1" />
+	</ACTION>
+	<ACTION desc="2. Set RTC time">
+		<CMD body="test_script/hardware_test setdate" key="0" />
+	</ACTION>
+	<ACTION desc="3. Update CAN adapter firmware">
+		<CMD body="test_script/hardware_test update-firmware" key="0" />
+	</ACTION>
+	<ACTION desc="4. Test gps module">
+		<CMD body="test_script/hardware_test test-gps" key="0" />
+	</ACTION>
+	<ACTION desc="5. Test cellular module">
+		<CMD body="test_script/hardware_test test-cellular" key="0" />
+	</ACTION>
+	<ACTION desc="6. Test RS232 serial port 1">
+		<CMD body="test_script/hardware_test test-serial1" key="0" />
+	</ACTION>
+	<ACTION desc="7. Test RS232 serial port 2">
+		<CMD body="test_script/hardware_test test-serial2" key="0" />
+	</ACTION>
+	<ACTION desc="8. Test RS485 serial port 1">
+		<CMD body="test_script/hardware_test test-serial3" key="0" />
+	</ACTION>
+	<ACTION desc="9. Test RS485 serial port 2">
+		<CMD body="test_script/hardware_test test-serial4" key="0" />
+	</ACTION>
+	<ACTION desc="10. Test CAN adapter">
+		<CMD body="test_script/hardware_test test-can" key="0" />
+	</ACTION>
+	<ACTION desc="11. Test reversing signal">
+		<CMD body="test_script/hardware_test test-rev" key="0" />
+	</ACTION>
+	<ACTION desc="12. Test alarm signal">
+		<CMD body="test_script/hardware_test test-alarm" key="0" />
+	</ACTION>
 </TEST_STEPS>
 
 </FT>

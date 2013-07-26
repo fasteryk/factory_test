@@ -26,9 +26,18 @@ struct install_action {
 	struct install_action *next;
 };
 
+struct test_item {
+	char *name;
+	char *cmd;
+	int key;
+	struct test_item *next;
+};
+
 
 extern char *tty_device;
 extern struct install_action *uboot_action_head, *shell_action_head;
+extern struct test_item *test_item_list;
+
 
 int read_profile(char *filename);
 

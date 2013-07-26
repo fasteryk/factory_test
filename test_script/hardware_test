@@ -1,0 +1,167 @@
+#!/usr/bin/expect --
+
+set remote_ip   192.168.10.210
+set port        9876
+
+log_user 0
+
+proc log_on {} {
+    while {1} {
+        expect  {
+            eof         { return -1 }
+            "login:"    { send "root\r" }
+            "assword:"  { send "123456\r" }
+            "\\$"       { break }
+        }
+    }
+
+    return 0
+}
+
+proc run_cmd {cmd} {
+    set timeout 40
+    send "$cmd\r"
+    expect "\\$"
+
+    send "echo $?\r"
+    expect {
+        "0" { return 0 }
+        "2*" { return -1 }
+    }
+}
+
+proc check_status {} {
+    global remote_ip port
+
+    for {set count 12} {$count > 0} {incr count -1} {
+        spawn -noecho nmap -Pn -p $port $remote_ip
+
+        expect {
+            "open" {
+                wait
+                return 0
+            }
+        }
+
+        wait
+        sleep 5
+    }
+
+    return -1;
+}
+
+switch [lindex $argv 0] {
+    "check-status" {
+        exit [check_status]
+    }
+
+    "setdate" {
+        spawn -noecho date +%m%d%H%M%Y.%S
+        expect "*.*"
+
+        set ds $expect_out(0,string)
+
+        spawn -noecho telnet $remote_ip
+        if {[log_on]} {
+            exit -1;
+        }
+
+        run_cmd "date $ds"
+        exit [run_cmd "hwclock -w"]
+    }
+
+    "update-firmware" {
+        spawn -noecho telnet $remote_ip
+        if {[log_on]} {
+            exit -1;
+        }
+
+        exit [run_cmd "/root/fw_update/fu /root/fw_update/firmware.bin"]
+    }
+
+    "test-gps" {
+        spawn -noecho telnet $remote_ip
+        if {[log_on]} {
+            exit -1;
+        }
+
+        exit [run_cmd "/root/hw_test/ht gps"]
+    }
+
+    "test-cellular" {
+        spawn -noecho telnet $remote_ip
+        if {[log_on]} {
+            exit -1;
+        }
+
+        exit [run_cmd "/root/hw_test/ht cellular"]
+    }
+
+    "test-serial1" {
+        spawn -noecho telnet $remote_ip
+        if {[log_on]} {
+            exit -1;
+        }
+
+        exit [run_cmd "/root/hw_test/ht serial1"]
+    }
+
+    "test-serial2" {
+        spawn -noecho telnet $remote_ip
+        if {[log_on]} {
+            exit -1;
+        }
+
+        exit [run_cmd "/root/hw_test/ht serial2"]
+    }
+
+    "test-serial3" {
+        spawn -noecho telnet $remote_ip
+        if {[log_on]} {
+            exit -1;
+        }
+
+        exit [run_cmd "/root/hw_test/ht serial3"]
+    }
+
+    "test-serial4" {
+        spawn -noecho telnet $remote_ip
+        if {[log_on]} {
+            exit -1;
+        }
+
+        exit [run_cmd "/root/hw_test/ht serial4"]
+    }
+
+    "test-can" {
+        spawn -noecho telnet $remote_ip
+        if {[log_on]} {
+            exit -1;
+        }
+
+        exit [run_cmd "/root/hw_test/ht can"]
+    }
+
+    "test-rev" {
+        spawn -noecho telnet $remote_ip
+        if {[log_on]} {
+            exit -1;
+        }
+
+        exit [run_cmd "/root/hw_test/ht rev"]
+    }
+
+    "test-alarm" {
+        spawn -noecho telnet $remote_ip
+        if {[log_on]} {
+            exit -1;
+        }
+
+        exit [run_cmd "/root/hw_test/ht alarm"]
+    }
+
+    default {
+        exit -1
+    }
+}
+

@@ -10,9 +10,65 @@
 #include <string.h>
 #include <termios.h>
 #include <stdlib.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
 
 #include "common.h"
+#include "profile.h"
 
+
+int tty_fd;
+
+
+int open_tty(char *device, speed_t baudrate)
+{
+    int fd;
+    struct termios options;
+
+    fd = open(device, O_RDWR | O_NOCTTY | O_NDELAY);
+    if (fd == -1) {
+    	perror("open tty");
+        return -1;
+    } else
+        fcntl(fd, F_SETFL, 0);
+
+    tcgetattr(fd, &options);
+
+    cfsetispeed(&options, baudrate);
+    cfsetospeed(&options, baudrate);
+
+    options.c_cflag |= (CLOCAL | CREAD);
+    options.c_cflag &= ~PARENB;         /* no parity */
+    options.c_cflag &= ~CSTOPB;         /* one stop bit */
+    options.c_cflag &= ~CSIZE;          /* mask the character size bits */
+    options.c_cflag |= CS8;             /* select 8 data bits */
+    options.c_cflag &= ~CRTSCTS;        /* disable hardware flow control */
+    options.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);  /* choosing raw input */
+    options.c_iflag &= ~(IXON | IXOFF | IXANY);          /* disable software flow control */
+    options.c_oflag &= ~OPOST;          /* choosing raw output */
+    options.c_cc[VTIME] = 1;
+    options.c_cc[VMIN] = 0;
+
+    tcflush(fd, TCIOFLUSH);
+    tcsetattr(fd, TCSANOW, &options);
+
+    return fd;
+}
+
+void recycle_target_power()
+{
+	int status;
+
+	ioctl(tty_fd, TIOCMGET, &status);
+	status |= TIOCM_DTR;
+	ioctl(tty_fd, TIOCMSET, &status);
+
+	sleep(2);
+
+	ioctl(tty_fd, TIOCMGET, &status);
+	status &= ~TIOCM_DTR;
+	ioctl(tty_fd, TIOCMSET, &status);
+}
 
 static int read_line(int tty, char *line, int len)
 {
@@ -40,7 +96,18 @@ static int read_line(int tty, char *line, int len)
 
 void send_cmd(int tty, const char *cmd)
 {
-	write(tty, cmd, strlen(cmd));
+	int len, ret, idx = 0;;
+
+	len = strlen(cmd);
+
+	do {
+		ret = write(tty, cmd+idx, len);
+		if (ret < 0)
+			return;
+
+		idx += ret;
+		len -= ret;
+	} while(len);
 }
 
 int check_line(int tty, char* content, int retry)
