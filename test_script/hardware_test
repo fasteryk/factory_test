@@ -47,7 +47,7 @@ proc check_status {} {
         sleep 5
     }
 
-    return -1;
+    return -1
 }
 
 switch [lindex $argv 0] {
@@ -63,7 +63,7 @@ switch [lindex $argv 0] {
 
         spawn -noecho telnet $remote_ip
         if {[log_on]} {
-            exit -1;
+            exit -1
         }
 
         run_cmd "date $ds"
@@ -73,7 +73,7 @@ switch [lindex $argv 0] {
     "update-firmware" {
         spawn -noecho telnet $remote_ip
         if {[log_on]} {
-            exit -1;
+            exit -1
         }
 
         exit [run_cmd "/root/fw_update/fu /root/fw_update/firmware.bin"]
@@ -82,7 +82,7 @@ switch [lindex $argv 0] {
     "test-gps" {
         spawn -noecho telnet $remote_ip
         if {[log_on]} {
-            exit -1;
+            exit -1
         }
 
         exit [run_cmd "/root/hw_test/ht gps"]
@@ -91,7 +91,7 @@ switch [lindex $argv 0] {
     "test-cellular" {
         spawn -noecho telnet $remote_ip
         if {[log_on]} {
-            exit -1;
+            exit -1
         }
 
         exit [run_cmd "/root/hw_test/ht cellular"]
@@ -100,7 +100,7 @@ switch [lindex $argv 0] {
     "test-serial1" {
         spawn -noecho telnet $remote_ip
         if {[log_on]} {
-            exit -1;
+            exit -1
         }
 
         exit [run_cmd "/root/hw_test/ht serial1"]
@@ -109,7 +109,7 @@ switch [lindex $argv 0] {
     "test-serial2" {
         spawn -noecho telnet $remote_ip
         if {[log_on]} {
-            exit -1;
+            exit -1
         }
 
         exit [run_cmd "/root/hw_test/ht serial2"]
@@ -118,7 +118,7 @@ switch [lindex $argv 0] {
     "test-serial3" {
         spawn -noecho telnet $remote_ip
         if {[log_on]} {
-            exit -1;
+            exit -1
         }
 
         exit [run_cmd "/root/hw_test/ht serial3"]
@@ -127,7 +127,7 @@ switch [lindex $argv 0] {
     "test-serial4" {
         spawn -noecho telnet $remote_ip
         if {[log_on]} {
-            exit -1;
+            exit -1
         }
 
         exit [run_cmd "/root/hw_test/ht serial4"]
@@ -136,7 +136,7 @@ switch [lindex $argv 0] {
     "test-can" {
         spawn -noecho telnet $remote_ip
         if {[log_on]} {
-            exit -1;
+            exit -1
         }
 
         exit [run_cmd "/root/hw_test/ht can"]
@@ -145,7 +145,7 @@ switch [lindex $argv 0] {
     "test-rev" {
         spawn -noecho telnet $remote_ip
         if {[log_on]} {
-            exit -1;
+            exit -1
         }
 
         exit [run_cmd "/root/hw_test/ht rev"]
@@ -154,7 +154,7 @@ switch [lindex $argv 0] {
     "test-alarm" {
         spawn -noecho telnet $remote_ip
         if {[log_on]} {
-            exit -1;
+            exit -1
         }
 
         exit [run_cmd "/root/hw_test/ht alarm"]

@@ -285,8 +285,6 @@ static gpointer test_process(gpointer data)
 		status.number++;
 	}
 
-	g_idle_add(finish_test, &end_state);
-
 	if (end_state == TEST_SUCCESS) {
 		getcwd(wd, 100);
 		sprintf(path, "%s/application", wd);
@@ -298,6 +296,8 @@ static gpointer test_process(gpointer data)
 
 		chdir(wd);
 	}
+
+	g_idle_add(finish_test, &end_state);
 
 	return NULL;
 }
